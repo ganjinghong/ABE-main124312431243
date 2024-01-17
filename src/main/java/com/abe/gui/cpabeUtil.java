@@ -19,7 +19,7 @@ public class cpabeUtil {
         Properties ctProp = loadPropFromFileUtil.loadPropFromFile(ctFileName);
         //下面的这个ppFile可以换成其他的，只要传入a.properties这个文件的路径就可以了，必须是路径，因为读取函数不是自己写的，是系统自带的。
 //        Pairing bp = PairingFactory.getPairing(ctProp.getProperty("ppFile"));
-        Pairing bp = PairingFactory.getPairing("data/a.properties");
+        Pairing bp = PairingFactory.getPairing("src/main/data/a.properties");
 
         Properties skProp = loadPropFromFileUtil.loadPropFromFile(skFileName);
 

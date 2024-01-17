@@ -1,14 +1,12 @@
 package com.abe.gui;
 
+import com.abe.FileToPngAndWaterMark;
 import com.abe.util.PasswordEncryptor;
-import com.abe.util.loadPropFromFileUtil;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.io.File;
-import java.util.Arrays;
-import java.util.Properties;
 
 public class GUICPABE_new {
     private static String account;
@@ -29,7 +27,7 @@ public class GUICPABE_new {
     private static void createWindow() {
         //登录界面
         JFrame login = new JFrame("登录界面");
-        login.setDefaultCloseOperation(login.EXIT_ON_CLOSE);
+        login.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         loginUI(login);
         login.setSize(800, 300);
         login.setResizable(false);
@@ -113,31 +111,6 @@ public class GUICPABE_new {
             }
         });
 
-        JButton skAttButton = new JButton("查看用户私钥对应的账号密码");
-        skAttButton.setPreferredSize(new Dimension(200, 20));
-        JTextField skAttTextField = new JTextField("查看你导出的私钥文件中具有的账号密码", 40);
-        skAttTextField.setForeground(Color.gray);
-        skAttTextField.setEditable(false);
-        skAttButton.addActionListener(e -> {
-            if (skFileName == null) {
-                JOptionPane.showMessageDialog(login, "请先选择秘钥文件");
-                return;
-            }
-            Properties skProp = loadPropFromFileUtil.loadPropFromFile(skFileName);
-            String userSk = skProp.getProperty("userSk");
-            String userAttListString = userSk.substring(userSk.indexOf("userAttList=[") + 13, userSk.indexOf("]D="));
-            System.out.println(userAttListString);
-            String userAttListString2 = userAttListString.replaceAll(" ", "");
-            System.out.println(userAttListString2);
-            String[] arr = userAttListString2.split("\\,");  //以,为分割点依次向不同的数组下标里存放数据，逗号不会被存到数组里，0存到arr[0],12存到arr[1],3存到arr[2]
-            System.out.println(arr[0]);
-            System.out.println(arr[1]);
-            System.out.println(Arrays.toString(arr));
-            skAttTextField.setText("私钥文件中具有的属性为：" + arr[0] + " " + arr[1]);
-            account = arr[0];
-            password = arr[1];
-        });
-
         JLabel usernameLabel = new JLabel("用户名:");
         JLabel passwordLabel = new JLabel("密码:");
         JTextField usernameField = new JTextField(20);
@@ -147,12 +120,14 @@ public class GUICPABE_new {
         decButton.setPreferredSize(new Dimension(200, 40));
         decButton.setForeground(Color.BLUE);
         decButton.addActionListener(e -> {
-            String username = usernameField.getText();
-            String password = new String(passwordField.getPassword());
+//            String username = usernameField.getText();
+//            String password = new String(passwordField.getPassword());
+            String username = "zhangxi";
+            String password = "string";
             if (username.isEmpty() || password.isEmpty()) {
                 JOptionPane.showMessageDialog(null, "请输入用户名和密码", "登录失败", JOptionPane.ERROR_MESSAGE);
             } else {
-                if (PasswordEncryptor.encrypt(password).equals(password)){
+                if (PasswordEncryptor.encrypt(password).equals(password)) {
                     JOptionPane.showMessageDialog(null, "密码错误", "登录失败", JOptionPane.ERROR_MESSAGE);
                 }
                 JOptionPane.showMessageDialog(null, "登录成功", "登录成功", JOptionPane.INFORMATION_MESSAGE);
@@ -161,39 +136,79 @@ public class GUICPABE_new {
                 jp.remove(passwordLabel);
                 jp.remove(passwordField);
                 jp.remove(decButton);
-            }
+                //添加解密输入框
+                JButton decryptButton = new JButton("在线查看");
+                decryptButton.setPreferredSize(new Dimension(200, 40));
+                decryptButton.setForeground(Color.BLUE);
+                decryptButton.addActionListener(e1 -> {
+                    if (ctFileName == null) {
+                        JOptionPane.showMessageDialog(login, "请先选择待解密文件");
+                        return;
+                    }
+                    if (skFileName == null) {
+                        JOptionPane.showMessageDialog(login, "请先选择秘钥文件");
+                        return;
+                    }
+                    //存储到项目的data文件夹中
+                    plainFileName = "./data/" + ctFileName.substring(ctFileName.lastIndexOf("/") + 1);
+                    //去除后缀
+                    plainFileName = plainFileName.substring(0, plainFileName.lastIndexOf("."));
+                    System.out.println(ctFileName);
+                    System.out.println(skFileName);
+                    System.out.println(plainFileName);
+                    boolean res = cpabeUtil.decrypt(ctFileName, skFileName, plainFileName);
 
-//            if (ctFileName == null) {
-//                JOptionPane.showMessageDialog(login, "请先选择待解密文件");
-//                return;
-//            }
-//            if (skFileName == null) {
-//                JOptionPane.showMessageDialog(login, "请先选择秘钥文件");
-//                return;
-//            }
-//            JFileChooser fileChooser = new JFileChooser(lastPath);
-//            fileChooser.setDialogTitle("选择明文要保存到的文件");
-//            int option = fileChooser.showSaveDialog(login);
-//            if (option == JFileChooser.APPROVE_OPTION) {
-//                File file = fileChooser.getSelectedFile();
-//                plainFileName = file.toString();
-//                lastPath = file.getParentFile().toString();
-//            } else {
-//                plainFileName = null;
-//                return;
-//            }
-//            boolean res = cpabeUtil.decrypt(ctFileName, skFileName, plainFileName);
-//            if (res) {
-//                JOptionPane.showMessageDialog(login, String.format("解密结果已保存至：%s，如果出现乱码则表示还原文件的后缀和加密前不一样", plainFileName), "解密成功", JOptionPane.PLAIN_MESSAGE);
-//            } else {
-//                JOptionPane.showMessageDialog(login, "解密失败,可能密钥的权限不够或者密钥的有效时间过期了");
-//            }
+                    if (res) {
+                        String pdfUrl;
+                        if (plainFileName.endsWith(".docx") || plainFileName.endsWith(".doc")) {
+                            pdfUrl = plainFileName.substring(0, plainFileName.lastIndexOf(".")) + ".pdf";
+                            try {
+                                FileToPngAndWaterMark.wordToPdf(plainFileName, pdfUrl);
+                            } catch (Exception ex) {
+                                JOptionPane.showMessageDialog(login, "文件转换失败");
+                                throw new RuntimeException(ex);
+                            }
+                        } else {
+                            pdfUrl = plainFileName;
+                        }
+
+                        SwingUtilities.invokeLater(() -> {
+                            int displayWidth = 1200; // 设置展示宽度
+                            int displayHeight = 800; // 设置展示高度
+                            DocumentViewer viewer = new DocumentViewer(displayWidth, displayHeight);
+                            viewer.setVisible(true);
+                            viewer.showPDF(pdfUrl);
+                        });
+                    } else {
+                        JOptionPane.showMessageDialog(login, "解密失败,可能密钥的权限不够或者密钥的有效时间过期了");
+                    }
+                });
+                //上传密文文件
+                JButton ctButton = new JButton("选择待查看密文文件*");
+                ctButton.setPreferredSize(new Dimension(200, 20));
+                ctButton.setForeground(Color.RED);
+                JTextField ctTextField = new JTextField("选择你想查看的文件", 40);
+                ctTextField.setForeground(Color.gray);
+                ctTextField.setEditable(false);
+                ctButton.addActionListener(e1 -> {
+                    JFileChooser fileChooser = new JFileChooser(lastPath);
+                    fileChooser.setDialogTitle("选择待查看文件");
+                    int option = fileChooser.showOpenDialog(login);
+                    if (option == JFileChooser.APPROVE_OPTION) {
+                        File file = fileChooser.getSelectedFile();
+                        ctFileName = file.toString();
+                        ctTextField.setText(ctFileName);
+                        lastPath = file.getParentFile().toString();
+                    }
+                });
+                jp.add(ctButton);
+                jp.add(ctTextField);
+                jp.add(decryptButton);
+            }
         });
 
         jp.add(skButton);
         jp.add(skTextField);
-//        jp.add(skAttButton);
-//        jp.add(skAttTextField);
         jp.add(usernameLabel);
         jp.add(usernameField);
         jp.add(passwordLabel);

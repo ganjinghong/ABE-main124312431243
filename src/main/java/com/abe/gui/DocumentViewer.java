@@ -5,6 +5,8 @@ import org.apache.pdfbox.rendering.PDFRenderer;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -24,7 +26,38 @@ public class DocumentViewer extends JFrame {
     private PDDocument document;
     private PDFRenderer renderer;
 
+    private void deleteFolderContents(String folderPath) {
+        File folder = new File(folderPath);
+
+        if (!folder.exists()) {
+            return;
+        }
+
+        File[] files = folder.listFiles();
+
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    // 递归删除子文件夹的内容
+                    deleteFolderContents(file.getAbsolutePath());
+                } else {
+                    // 删除文件
+                    file.delete();
+                }
+            }
+        }
+    }
+
     public DocumentViewer(int width, int height) {
+        this.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                // 在窗口关闭时执行删除操作
+                deleteFolderContents("./data");
+                // 关闭程序
+                System.exit(0);
+            }
+        });
         setTitle("文档查看器");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
@@ -53,6 +86,12 @@ public class DocumentViewer extends JFrame {
     }
 
     public void showPDF(String filePath) {
+        //判断文件拓展名是否为pdf
+        if (!filePath.endsWith(".pdf")) {
+            JOptionPane.showMessageDialog(this, "不支持的文件格式");
+            this.dispose();
+            return;
+        }
         try {
             document = PDDocument.load(new File(filePath));
             renderer = new PDFRenderer(document);
@@ -114,7 +153,7 @@ public class DocumentViewer extends JFrame {
 
             DocumentViewer viewer = new DocumentViewer(displayWidth, displayHeight);
             viewer.setVisible(true);
-            viewer.showPDF("/Users/zhangxi/Downloads/WS23_IPCP_Lecture07_CNNs.pdf");
+            viewer.showPDF("/Users/zhangxi/Desktop/深圳技术大学-初步验收报告.docx");
         });
     }
 }
